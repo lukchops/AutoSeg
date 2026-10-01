@@ -1,0 +1,46 @@
+# Few, clear peaks on a quiet, gently drifting baseline. No composites, dips or artifacts.
+
+fs: 10
+length_min: [5, 25]
+peak_count: [0, 5]
+boundary_frac: 0.01
+real_templates: templates/real_templates.npz
+
+peaks:
+  height_mau: [10, 500]
+  min_snr: 10
+  min_visibility: 0.3
+  fwhm_s: [1.5, 8]
+  edge_margin_s: 10
+  negative_prob: 0.0
+  asym_sigma: 0.1
+  shape_noise: 0.02
+
+families:
+  gaussian:   {weight: 3}
+  emg_tail:   {weight: 3, tau_ratio: [0.3, 1.5]}
+  emg_front:  {weight: 0, tau_ratio: [0.3, 1]}
+  bigaussian: {weight: 1, ratio: [1.2, 2]}
+  lorentzian: {weight: 0, eta: [0.2, 0.5]}
+  flat_top:   {weight: 0, power: [1.5, 3]}
+  broad_hump: {weight: 0, ratio: [1, 2], fwhm_s: [20, 60]}
+  narrow:     {weight: 0, fwhm_s: [0.5, 1]}
+  shoulder:   {weight: 0, rs: [0.7, 0.9], height_ratio: [0.2, 0.5], sub_families: [gaussian, emg_tail]}
+  doublet:    {weight: 0, rs: [0.8, 1.2], height_ratio: [0.5, 1], sub_families: [gaussian, emg_tail]}
+  real:       {weight: 2}
+
+background:
+  offset_mau: [-1, 1]
+  drift_mau: [-3, 3]
+  curve_mau: [0, 1]
+  wander_mau: [0, 0.3]
+  wander_scale_s: [60, 300]
+  steps: {count: [0, 0], mau: [0.5, 2], rise_s: [1, 5]}
+  noise_mau: [0.05, 0.3]
+  lf_noise_ratio: [0, 0.3]
+  lf_noise_scale_s: [0.5, 2]
+
+artifacts:
+  spikes:   {prob: 0, count: [1, 1], mau: [2, 10], width_samples: [1, 2]}
+  dropouts: {prob: 0, count: [1, 1], duration_s: [0.5, 2]}
+  clipping: {prob: 0, frac: [0.8, 0.95]}

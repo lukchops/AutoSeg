@@ -1,0 +1,47 @@
+# Roughly PRIMAS-like: noise ~0.1-1 mAU, peaks 1-800 mAU, FWHM mostly 1-10 s.
+# [lo, hi] pairs are ranges sampled per chromatogram / per peak.
+
+fs: 10                      # Hz
+length_min: [5, 25]         # run length, uniform
+peak_count: [0, 10]         # peaks per run (composite = 2 peaks), uniform
+boundary_frac: 0.01         # peak start/end = where the clean peak reaches 1% of its own height
+real_templates: templates/real_templates.npz
+
+peaks:
+  height_mau: [1, 800]      # log-uniform (lower end raised per peak to satisfy min_snr)
+  min_snr: 5                # peak height >= min_snr x std of the (line-detrended) background under the peak
+  min_visibility: 0.3        # 0..1; drop peaks buried under neighbours (no own maximum or shoulder in the summed signal)
+  fwhm_s: [1, 10]           # log-uniform; a family can override with its own fwhm_s
+  edge_margin_s: 10         # apex never closer than this to the run start/end
+  negative_prob: 0.03       # chance a peak (or composite group) is a negative dip
+  asym_sigma: 0.15          # left/right halves stretched by exp(+g) / exp(-g), g ~ N(0, asym_sigma)
+  shape_noise: 0.04         # amplitude of smooth multiplicative shape deformation
+
+families:                   # weight = relative sampling probability (0 disables)
+  gaussian:   {weight: 2}
+  emg_tail:   {weight: 3, tau_ratio: [0.3, 3]}
+  emg_front:  {weight: 0.5, tau_ratio: [0.3, 1.5]}
+  bigaussian: {weight: 1, ratio: [1.2, 3]}
+  lorentzian: {weight: 0.5, eta: [0.2, 0.8]}
+  flat_top:   {weight: 0.3, power: [1.5, 4]}
+  broad_hump: {weight: 0.3, ratio: [1, 2], fwhm_s: [20, 90]}
+  narrow:     {weight: 0.5, fwhm_s: [0.5, 1]}
+  shoulder:   {weight: 0.7, rs: [0.6, 0.9], height_ratio: [0.15, 0.5], sub_families: [gaussian, emg_tail, bigaussian]}
+  doublet:    {weight: 0.7, rs: [0.6, 1.2], height_ratio: [0.5, 1], sub_families: [gaussian, emg_tail, bigaussian]}
+  real:       {weight: 2}
+
+background:
+  offset_mau: [-2, 2]
+  drift_mau: [-10, 10]      # total linear gain/loss over the run
+  curve_mau: [0, 5]         # quadratic/cubic bend amplitude
+  wander_mau: [0, 1]        # slow random wander amplitude (std)
+  wander_scale_s: [30, 300]
+  steps: {count: [0, 1], mau: [0.5, 5], rise_s: [0.5, 5]}
+  noise_mau: [0.1, 1]       # white noise std, log-uniform
+  lf_noise_ratio: [0, 1]    # low-frequency noise std relative to white noise
+  lf_noise_scale_s: [0.5, 3]
+
+artifacts:
+  spikes:   {prob: 0.2, count: [1, 3], mau: [2, 50], width_samples: [1, 3]}
+  dropouts: {prob: 0.05, count: [1, 1], duration_s: [0.5, 5]}
+  clipping: {prob: 0.05, frac: [0.6, 0.95]}   # clip level = median + frac * (max - median)
